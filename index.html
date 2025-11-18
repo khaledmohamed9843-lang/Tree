@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شجرة الأدعية</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .game-title {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeIn 1s ease-in;
+        }
+
+        .game-instruction {
+            text-align: center;
+            color: #fff;
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .game-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .tree-container {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            position: relative;
+            min-width: 350px;
+            max-width: 450px;
+            flex: 1;
+        }
+
+        .tree {
+            width: 100%;
+            height: 416px;
+            background: url('tree.png') no-repeat center;
+            background-size: contain;
+            position: relative;
+            margin: 20px auto;
+        }
+
+        .tree-spots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drop-zone {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 3px dashed #34A853;
+            border-radius: 50%;
+            background: rgba(52, 168, 83, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            background: rgba(52, 168, 83, 0.3);
+            border-color: #0F9D58;
+            transform: scale(1.1);
+        }
+
+        .drop-zone.filled {
+            border: none;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .apples-container {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            min-width: 350px;
+            max-width: 450px;
+            flex: 1;
+        }
+
+        .apples-title {
+            text-align: center;
+            color: #d32f2f;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .apples-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .apple {
+            width: 120px;
+            height: 120px;
+            cursor: move;
+            transition: all 0.3s ease;
+            position: relative;
+            user-select: none;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+        }
+
+        .apple:hover {
+            transform: translateY(-5px) scale(1.1);
+            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.3));
+        }
+
+        .apple.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .apple.placed {
+            display: none;
+        }
+
+        .apple-on-tree {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: popIn 0.5s ease;
+            cursor: pointer;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
+        }
+
+        .completion-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .completion-modal.show {
+            display: flex;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 50px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: scaleIn 0.5s ease;
+            max-width: 500px;
+        }
+
+        .modal-content h2 {
+            color: #34A853;
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            font-size: 1.5rem;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-restart:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .tooltip-prayer {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .tooltip-prayer.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 1.8rem;
+            }
+            
+            .game-instruction {
+                font-size: 1rem;
+            }
+
+            .game-area {
+                flex-direction: column;
+            }
+
+            .tree-container, .apples-container {
+                min-width: 100%;
+            }
+
+            .modal-content {
+                padding: 30px;
+                margin: 20px;
+            }
+
+            .modal-content h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="game-title">🌳 شجرة الأدعية 🤲</h1>
+        <div class="game-instruction">
+            هيا بنا نملأ الشجرة بثمار من الأدعية
+        </div>
+
+        <div class="game-area">
+            <div class="tree-container">
+                <div class="tree">
+                    <div class="tree-spots" id="treeSpots"></div>
+                </div>
+            </div>
+
+            <div class="apples-container">
+                <div class="apples-title">🍎 اسحب الأدعية للشجرة</div>
+                <div class="apples-grid" id="applesGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="completion-modal" id="completionModal">
+        <div class="modal-content">
+            <h2>🎉 أحسنت!</h2>
+            <p>لقد أكملت شجرة الأدعية بنجاح!<br>بارك الله فيك</p>
+            <button class="btn-restart" onclick="restartGame()">ابدأ من جديد</button>
+        </div>
+    </div>
+
+    <div class="tooltip-prayer" id="tooltip"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const prayers = [
+            { id: 1, text: "الحمدلله على كل النعم", image: "apple1.png" },
+            { id: 2, text: "اللهم احفظ أمي وأبي", image: "apple2.png" },
+            { id: 3, text: "اللهم اجعل قلبي سعيدًا", image: "apple3.png" },
+            { id: 4, text: "اللهم بارك لي في عملي", image: "apple4.png" },
+            { id: 5, text: "اللهم احفظني من كل شر", image: "apple5.png" }
+        ];
+
+        const treePositions = [
+            { top: '20%', left: '42%' },
+            { top: '30%', left: '22%' },
+            { top: '30%', left: '62%' },
+            { top: '45%', left: '10%' },
+            { top: '45%', left: '75%' }
+        ];
+
+        let placedApples = 0;
+        let draggedElement = null;
+        let draggedPrayer = null;
+        let clapAudio = null;
+
+        function initGame() {
+            const applesGrid = document.getElementById('applesGrid');
+            const treeSpots = document.getElementById('treeSpots');
+            
+            applesGrid.innerHTML = '';
+            treeSpots.innerHTML = '';
+            placedApples = 0;
+
+            prayers.forEach((prayer, index) => {
+                const apple = document.createElement('div');
+                apple.className = 'apple';
+                apple.draggable = true;
+                apple.dataset.prayerId = prayer.id;
+                apple.dataset.appleImage = prayer.image;
+                apple.style.backgroundImage = `url('${prayer.image}')`;
+                apple.title = prayer.text;
+                
+                apple.addEventListener('dragstart', handleDragStart);
+                apple.addEventListener('dragend', handleDragEnd);
+                
+                apple.addEventListener('touchstart', handleTouchStart);
+                apple.addEventListener('touchmove', handleTouchMove);
+                apple.addEventListener('touchend', handleTouchEnd);
+                
+                applesGrid.appendChild(apple);
+
+                const dropZone = document.createElement('div');
+                dropZone.className = 'drop-zone';
+                dropZone.style.top = treePositions[index].top;
+                dropZone.style.left = treePositions[index].left;
+                dropZone.dataset.spotId = index;
+                
+                dropZone.addEventListener('dragover', handleDragOver);
+                dropZone.addEventListener('drop', handleDrop);
+                dropZone.addEventListener('dragleave', handleDragLeave);
+                
+                treeSpots.appendChild(dropZone);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            draggedPrayer = prayers.find(p => p.id == e.target.dataset.prayerId);
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            if (!e.target.classList.contains('filled') && e.target.classList.contains('drop-zone')) {
+                e.dataTransfer.dropEffect = 'move';
+                e.target.classList.add('drag-over');
+            } else {
+                e.dataTransfer.dropEffect = 'none';
+            }
+        }
+
+        function handleDragLeave(e) {
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.classList.remove('drag-over');
+            
+            if (draggedElement && !e.target.classList.contains('filled') && e.target.classList.contains('drop-zone')) {
+                placeAppleOnTree(e.target, draggedPrayer);
+                draggedElement.classList.add('placed');
+                draggedElement = null;
+                draggedPrayer = null;
+            }
+        }
+
+        let touchStartX, touchStartY;
+
+        function handleTouchStart(e) {
+            draggedElement = e.target;
+            draggedPrayer = prayers.find(p => p.id == e.target.dataset.prayerId);
+            e.target.classList.add('dragging');
+            
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+        }
+
+        function handleTouchEnd(e) {
+            e.target.classList.remove('dragging');
+            
+            const touch = e.changedTouches[0];
+            const dropZones = document.querySelectorAll('.drop-zone:not(.filled)');
+            
+            let placed = false;
+            dropZones.forEach(zone => {
+                if (!placed) {
+                    const rect = zone.getBoundingClientRect();
+                    if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                        touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                        placeAppleOnTree(zone, draggedPrayer);
+                        e.target.classList.add('placed');
+                        placed = true;
+                    }
+                }
+            });
+            
+            draggedElement = null;
+            draggedPrayer = null;
+        }
+
+        function placeAppleOnTree(dropZone, prayer) {
+            dropZone.classList.add('filled');
+            
+            const appleOnTree = document.createElement('div');
+            appleOnTree.className = 'apple-on-tree';
+            appleOnTree.style.backgroundImage = `url('${prayer.image}')`;
+            appleOnTree.dataset.prayerText = prayer.text;
+            
+            appleOnTree.addEventListener('mouseenter', showTooltip);
+            appleOnTree.addEventListener('mouseleave', hideTooltip);
+            appleOnTree.addEventListener('click', function() {
+                speakPrayer(prayer.text);
+            });
+            
+            dropZone.appendChild(appleOnTree);
+            
+            placedApples++;
+            
+            if (placedApples === prayers.length) {
+                setTimeout(showCompletionModal, 500);
+            }
+        }
+
+        function showTooltip(e) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.textContent = e.target.dataset.prayerText;
+            tooltip.classList.add('show');
+            
+            const rect = e.target.getBoundingClientRect();
+            tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
+            tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
+        }
+
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.classList.remove('show');
+        }
+
+        function showCompletionModal() {
+            const modal = document.getElementById('completionModal');
+            modal.classList.add('show');
+            
+            clapAudio = new Audio('clap.mp3');
+            clapAudio.play();
+        }
+
+        function speakPrayer(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ar-SA';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function restartGame() {
+            if (clapAudio) {
+                clapAudio.pause();
+                clapAudio.currentTime = 0;
+            }
+            const modal = document.getElementById('completionModal');
+            modal.classList.remove('show');
+            initGame();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
