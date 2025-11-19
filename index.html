@@ -170,6 +170,60 @@
             filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
         }
 
+        .start-screen {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .start-screen.hide {
+            display: none;
+        }
+
+        .start-content {
+            text-align: center;
+            color: white;
+        }
+
+        .start-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            animation: bounceIn 1s ease;
+        }
+
+        .start-content p {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .btn-start {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .btn-start:hover {
+            transform: scale(1.1) translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
         .completion-modal {
             display: none;
             position: fixed;
@@ -243,6 +297,12 @@
             100% { transform: scale(1); }
         }
 
+        @keyframes bounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         .tooltip-prayer {
             position: absolute;
             background: rgba(0,0,0,0.9);
@@ -286,10 +346,31 @@
             .modal-content h2 {
                 font-size: 2rem;
             }
+
+            .start-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .start-content p {
+                font-size: 1.2rem;
+            }
+
+            .btn-start {
+                padding: 15px 40px;
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="start-screen" id="startScreen">
+        <div class="start-content">
+            <h1>🌳 شجرة الأدعية 🤲</h1>
+            <p>هيا بنا نملأ الشجرة بثمار من الأدعية</p>
+            <button class="btn-start" onclick="startGame()">ابدأ اللعبة</button>
+        </div>
+    </div>
+
     <div class="container">
         <h1 class="game-title">🌳 شجرة الأدعية 🤲</h1>
         <div class="game-instruction">
@@ -323,11 +404,11 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const prayers = [
-            { id: 1, text: "الحمدلله على كل النعم", image: "apple1.png" },
-            { id: 2, text: "اللهم احفظ أمي وأبي", image: "apple2.png" },
-            { id: 3, text: "اللهم اجعل قلبي سعيدًا", image: "apple3.png" },
-            { id: 4, text: "اللهم بارك لي في عملي", image: "apple4.png" },
-            { id: 5, text: "اللهم احفظني من كل شر", image: "apple5.png" }
+            { id: 1, text: "الحمدلله على كل النعم", image: "apple1.png", audio: "1.mp3" },
+            { id: 2, text: "اللهم احفظ أمي وأبي", image: "apple2.png", audio: "2.mp3" },
+            { id: 3, text: "اللهم اجعل قلبي سعيدًا", image: "apple3.png", audio: "4.mp3" },
+            { id: 4, text: "اللهم بارك لي في عملي", image: "apple4.png", audio: "3.mp3" },
+            { id: 5, text: "اللهم احفظني من كل شر", image: "apple5.png", audio: "5.mp3" }
         ];
 
         const treePositions = [
@@ -342,6 +423,23 @@
         let draggedElement = null;
         let draggedPrayer = null;
         let clapAudio = null;
+        let welcomeAudio = null;
+
+        function startGame() {
+            welcomeAudio = new Audio('start.mp3');
+            welcomeAudio.play().catch(error => {
+                console.log('Could not play welcome audio:', error);
+                document.getElementById('startScreen').classList.add('hide');
+            });
+            
+            // welcomeAudio.onended = function() {
+                document.getElementById('startScreen').classList.add('hide');
+            // };
+            
+            welcomeAudio.onerror = function() {
+                document.getElementById('startScreen').classList.add('hide');
+            };
+        }
 
         function initGame() {
             const applesGrid = document.getElementById('applesGrid');
@@ -357,6 +455,7 @@
                 apple.draggable = true;
                 apple.dataset.prayerId = prayer.id;
                 apple.dataset.appleImage = prayer.image;
+                apple.dataset.appleAudio = prayer.audio;
                 apple.style.backgroundImage = `url('${prayer.image}')`;
                 apple.title = prayer.text;
                 
@@ -475,10 +574,24 @@
             
             dropZone.appendChild(appleOnTree);
             
+            // تشغيل صوت التفاحة
+            const appleAudio = new Audio(prayer.audio);
+            appleAudio.play().catch(error => {
+                console.log('Could not play audio:', error);
+            });
+            
             placedApples++;
             
+            // إذا كانت هذه آخر تفاحة، انتظر حتى ينتهي الصوت
             if (placedApples === prayers.length) {
-                setTimeout(showCompletionModal, 500);
+                appleAudio.onended = function() {
+                    showCompletionModal();
+                };
+                
+                // في حالة فشل تشغيل الصوت، اعرض النافذة بعد ثانية واحدة
+                appleAudio.onerror = function() {
+                    setTimeout(showCompletionModal, 1000);
+                };
             }
         }
 
@@ -502,7 +615,9 @@
             modal.classList.add('show');
             
             clapAudio = new Audio('clap.mp3');
-            clapAudio.play();
+            clapAudio.play().catch(error => {
+                console.log('Could not play clap audio:', error);
+            });
         }
 
         function speakPrayer(text) {
